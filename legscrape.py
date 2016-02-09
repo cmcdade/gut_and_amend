@@ -1,48 +1,53 @@
 from bs4 import BeautifulSoup
 import urllib
+import re
 
-def get_removals(soup):
-    removes = soup.find_all("strike")
-    remove_divs = soup.find_all("div", id="strikediv")
+def get_removals(sections):
     remove_len = 0
-
-    for sec in removes:
-        #print sec.get_text()
-        remove_len += len(sec.get_text())
-
-    for sec in remove_divs:
-        #print sec.get_text()
-        remove_len += len(sec.get_text())
-    #print "\n"
+    for sec in sections:
+        removes = sec.find_all("strike")
+        remove_divs = sec.find_all("div", id="strikediv")
+        for small_remove in removes:
+            remove_len = remove_len + 1
+        for small_sec in remove_divs:
+            remove_len = remove_len + 1
 
     return remove_len
 
-def get_additions(soup):
-    adds = soup.find_all("font", class_="blue_text")
-    add_len = 0
-    for sec in adds:
-        #print sec.get_text()
-        add_len += len(sec.get_text())
-    #print "\n"
+def get_additions(sections):
+    additions = 0
+    num_sections = 0
+    for sec in sections:
+        adds = sec.find_all("font", class_="blue_text")
+        for add in adds:
+            additions = additions + 1
 
-    return add_len
+    return additions
 
 def print_currentVersion(soup):
     version = soup.find("option", selected=True)
     print version.get_text()
 
+def get_sections(soup):
+    sections = soup.find_all("div", style="margin:0 0 1em 0;")
+    add = get_additions(sections)
+    remove = get_removals(sections)
+    x = 1
+    for sec in sections:
+        x = x + 1
+    print '----------------------------------'        
+    print "Total number of sections: "+str(x)
+    print "Number of sections with additions: "+str(add)
+    print "Number of sections with removals: "+str(remove)
+    print '---------------------------------\n'
+
 def scrape_versions(link, bill_len):
     r = urllib.urlopen(link).read()
     soup = BeautifulSoup(r, 'lxml')
     print_currentVersion(soup)
-    print '----------------------------------'
+    get_sections(soup)
     #print 'PRINTING ADDITIONS---------------\n'
-    add = get_additions(soup)
     #print 'PRINT REMOVALS-------------------\n'
-    remove = get_removals(soup)
-    print 'add change: '+str((float(add)/float(bill_len)))
-    print 'remove change: '+str((float(remove)/float(bill_len)))
-    print '---------------------------------\n'
 
 def get_bill_length(link):
     r = urllib.urlopen(link).read()
