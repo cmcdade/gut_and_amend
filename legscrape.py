@@ -16,12 +16,17 @@ def get_removals(sections):
 
 def get_additions(sections):
     additions = 0
-    num_sections = 0
+    num_sections = 1
     for sec in sections:
+        sec_len = len(sec.getText())
+        add_len = 0
         adds = sec.find_all("font", class_="blue_text")
         for add in adds:
             additions = additions + 1
-
+            add_len += len(add.getText())
+        if add_len > 0:
+            print "Section "+str(num_sections)+": "+str(float(add_len)/float(sec_len))
+        num_sections = num_sections + 1
     return additions
 
 def print_currentVersion(soup):
@@ -32,10 +37,10 @@ def get_sections(soup):
     sections = soup.find_all("div", style="margin:0 0 1em 0;")
     add = get_additions(sections)
     remove = get_removals(sections)
-    x = 1
+    x = 0
     for sec in sections:
         x = x + 1
-    print '----------------------------------'        
+    print '----------------------------------'
     print "Total number of sections: "+str(x)
     print "Number of sections with additions: "+str(add)
     print "Number of sections with removals: "+str(remove)
