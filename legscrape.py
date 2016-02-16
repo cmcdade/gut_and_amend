@@ -2,6 +2,17 @@ from bs4 import BeautifulSoup
 import urllib
 import re
 
+class Bill:
+    def __init__(self, t, amends):
+        self.title = t
+        self.amendments = amends
+
+class Amendment:
+    def __init__(self, t, adds, removs):
+        self.title = t
+        self.additions = adds
+        self.removals = removs
+
 def get_removals(sections, title):
     removed_secs = {}
 
@@ -25,20 +36,7 @@ def get_removals(sections, title):
 
 def print_currentVersion(soup):
     version = soup.find("option", selected=True)
-    print version.get_text()
-
-def get_sections(soup):
-    sections = soup.find_all("div", style="margin:0 0 1em 0;")
-    add = get_additions(sections)
-    remove = get_removals(sections)
-    x = 0
-    for sec in sections:
-        x = x + 1
-    print '----------------------------------'
-    print "Total number of sections: "+str(x)
-    print "Number of sections with additions: "+str(add)
-    print "Number of sections with removals: "+str(remove)
-    print '---------------------------------\n'
+    return version.get_text()
 
 def CheckSubSection(s):
     if '(' in s:
@@ -94,7 +92,7 @@ def BuildAmendmentSection(soup):
 
     return additions
 
-def AmendmentSections(soup):
+def AmendmentSections(soup, title):
     sections = soup.find("div", id="bill_all")
     adds = {}
     removes = {}
@@ -103,59 +101,65 @@ def AmendmentSections(soup):
         adds = dict(adds.items() + BuildAmendmentSection(x).items())
         removes = dict(removes.items() + BuildAmendmentRemovals(x).items())
 
-    print 'ADDITIONS....'
-    print '----------------------------'
-    print adds
-    print '------------'
-    print 'REMOVALS....'
-    print removes
-    print '----------------------------'
+    amendment_vers = Amendment(title, adds, removes)
+
+    return amendment_vers
 
 def scrape_versions(link):
     r = urllib.urlopen(link).read()
     soup = BeautifulSoup(r, 'lxml')
-    print_currentVersion(soup)
-    AmendmentSections(soup)
+    return AmendmentSections(soup, print_currentVersion(soup))
 
 def compile_versions(versions, base):
     compAdd = "&cversion="
     version = 0
+    amendments = []
     for x in versions:
         cmp_link = base+compAdd+x['value']
         if version > 0:
-            scrape_versions(cmp_link)
+            amendments.append(scrape_versions(cmp_link))
         version += 1
+
+    return amendments
 
 def get_versions(soup, base):
     version_links = soup.find_all("select", id="version")
+    amendments = []
+
     for x in version_links:
         val = x.find_all("option")
-        compile_versions(val, base)
+        amendments.append(compile_versions(val, base))
+
+    return amendments
 
 def compare_versions(link):
     r = urllib.urlopen(link).read()
     soup = BeautifulSoup(r, "lxml")
-    get_versions(soup, link)
+    return get_versions(soup, link)
+
+def GetBillTitle(soup):
+    title = soup.find(id="bill_title")
+    return title.get_text()
 
 def compare_section(soup):
     comp_links = soup.find_all("a", id="nav_bar_top_version_compare")
-    print_billTitle(soup)
     return comp_links[0]['href']
-
-def print_billTitle(soup):
-    title = soup.find(id="bill_title")
-    print title.get_text()
 
 def open_url(link):
     r = urllib.urlopen(link).read()
     comp = compare_section(BeautifulSoup(r, "lxml"))
+    bill_title = GetBillTitle(BeautifulSoup(r, "lxml"))
     base = link[0:34]
     comp_link = base+comp
-    compare_versions(comp_link)
+    amendments = compare_versions(comp_link)
+    processed_bill = Bill(bill_title, amendments)
+
+    return processed_bill
 
 def process_bill():
     bill_link = raw_input("Enter leginfo link to bill: ")
-    open_url(bill_link)
+    bill = open_url(bill_link)
+    print bill.title
 
 def main():
     process_bill()
