@@ -156,13 +156,6 @@ def open_url(link):
 
     return processed_bill
 
-def process_bill():
-    bill_link = raw_input("Enter leginfo link to bill: ")
+def process_bill(bill_link):
     bill = open_url(bill_link)
-    print bill.title
-
-def main():
-    process_bill()
-
-if __name__ == '__main__':
-    main()
+    return bill
