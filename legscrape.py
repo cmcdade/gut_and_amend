@@ -2,32 +2,26 @@ from bs4 import BeautifulSoup
 import urllib
 import re
 
-def get_removals(sections):
-    remove_len = 0
+def get_removals(sections, title):
+    removed_secs = {}
+
     for sec in sections:
+        remove_len = 0
+        s = sec.get_text()
+
         removes = sec.find_all("strike")
         remove_divs = sec.find_all("div", id="strikediv")
+
         for small_remove in removes:
-            remove_len = remove_len + 1
+            remove_len += len(small_remove.get_text())
+
         for small_sec in remove_divs:
-            remove_len = remove_len + 1
+            remove_len += len(small_sec.get_text())
 
-    return remove_len
+        subsection = CheckSubSection(s)
+        removed_secs[str(title+subsection)] = round(float(remove_len)/float(len(s)), 2)
 
-def get_additions(sections):
-    additions = 0
-    num_sections = 1
-    for sec in sections:
-        sec_len = len(sec.getText())
-        add_len = 0
-        adds = sec.find_all("font", class_="blue_text")
-        for add in adds:
-            additions = additions + 1
-            add_len += len(add.getText())
-        if add_len > 0:
-            print "Section "+str(num_sections)+": "+str(float(add_len)/float(sec_len))
-        num_sections = num_sections + 1
-    return additions
+    return removed_secs
 
 def print_currentVersion(soup):
     version = soup.find("option", selected=True)
@@ -46,31 +40,90 @@ def get_sections(soup):
     print "Number of sections with removals: "+str(remove)
     print '---------------------------------\n'
 
-def scrape_versions(link, bill_len):
+def CheckSubSection(s):
+    if '(' in s:
+        return s[s.index("(") + 1:s.index("(") + 2]
+    else:
+        return "1"
+
+def PrintSubSection(title, add_len, total_len):
+    change = (float(add_len)/float(total_len))*100.0
+    if change > 0.0:
+        print title+"\t"+str(change)+" %"
+
+def BuildAmendmentSmallAdds(soup, title, add_secs):
+    sections = soup.find_all("div", style="margin:0 0 1em 0;")
+
+    for sec in sections:
+        add_len = 0
+        s = sec.get_text()
+        adds = sec.find_all("font", class_="blue_text")
+        subsection = CheckSubSection(s)
+        for x in adds:
+            add_len += len(x.get_text())
+        add_secs[str(title+subsection)] = round(float(add_len)/float(len(s)), 2)
+
+def BuildAmendmentAdditions(soup, title):
+    tmp = soup.find_all("font", class_="blue_text")
+    add_sections = {}
+    BuildAmendmentSmallAdds(soup, title, add_sections)
+
+    for y in tmp:
+        divs = y.find_all("div", style="margin:0 0 1em 0;")
+        if len(divs) > 0:
+            for z in divs:
+                subsection = CheckSubSection(z.get_text())
+                add_sections[str(title+subsection)] = 100.0
+
+    return add_sections
+
+def BuildAmendmentRemovals(soup):
+    title = GetSectionTitle(soup)
+    sections = soup.find_all("div", style="margin:0 0 1em 0;")
+    remove = get_removals(sections, title)
+
+    return remove
+
+def GetSectionTitle(soup):
+    section_title = soup.find("h6")
+    return str(section_title.getText())
+
+def BuildAmendmentSection(soup):
+    title = GetSectionTitle(soup)
+    additions = BuildAmendmentAdditions(soup, title)
+
+    return additions
+
+def AmendmentSections(soup):
+    sections = soup.find("div", id="bill_all")
+    adds = {}
+    removes = {}
+
+    for x in sections:
+        adds = dict(adds.items() + BuildAmendmentSection(x).items())
+        removes = dict(removes.items() + BuildAmendmentRemovals(x).items())
+
+    print 'ADDITIONS....'
+    print '----------------------------'
+    print adds
+    print '------------'
+    print 'REMOVALS....'
+    print removes
+    print '----------------------------'
+
+def scrape_versions(link):
     r = urllib.urlopen(link).read()
     soup = BeautifulSoup(r, 'lxml')
     print_currentVersion(soup)
-    get_sections(soup)
-    #print 'PRINTING ADDITIONS---------------\n'
-    #print 'PRINT REMOVALS-------------------\n'
-
-def get_bill_length(link):
-    r = urllib.urlopen(link).read()
-    soup = BeautifulSoup(r ,'lxml')
-    body = soup.find("div", id="bill_all")
-
-    return len(body.get_text())
+    AmendmentSections(soup)
 
 def compile_versions(versions, base):
     compAdd = "&cversion="
     version = 0
-    current_bill_len = 0
     for x in versions:
         cmp_link = base+compAdd+x['value']
-        if version == 0:
-            current_bill_len = get_bill_length(cmp_link)
-        else:
-            scrape_versions(cmp_link, current_bill_len)
+        if version > 0:
+            scrape_versions(cmp_link)
         version += 1
 
 def get_versions(soup, base):
@@ -87,7 +140,6 @@ def compare_versions(link):
 def compare_section(soup):
     comp_links = soup.find_all("a", id="nav_bar_top_version_compare")
     print_billTitle(soup)
-    print "\n"
     return comp_links[0]['href']
 
 def print_billTitle(soup):
@@ -103,7 +155,6 @@ def open_url(link):
 
 def process_bill():
     bill_link = raw_input("Enter leginfo link to bill: ")
-    print bill_link
     open_url(bill_link)
 
 def main():
