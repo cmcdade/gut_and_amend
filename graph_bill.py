@@ -5,30 +5,28 @@ import matplotlib.pyplot as plt
 def chart_axis(bill):
     axis = []
 
-    for key in bill.additions:
+    for key in sorted(bill.additions):
         axis.append(key)
     return axis
 
 def ChartAdditions(bill):
     adds = []
 
-    for add in bill.additions:
+    for add in sorted(bill.additions):
         adds.append(bill.additions[add])
 
     return adds
 
 def ChartRemovals(bill):
     removes = []
-    for add in bill.removals:
+    for add in sorted(bill.removals):
         removes.append(bill.removals[add])
 
     return removes
 
-def draw_chart(bill, chart_pos, fig, num):
-    ax = plt.subplot(chart_pos,1,num)
+def draw_chart(bill, chart_pos, fig, ax):
+
     adds = ChartAdditions(bill)
-    ## the data
-    N = 35
     menMeans = ChartAdditions(bill)
     N = len(menMeans)
     womenMeans = ChartRemovals(bill)
@@ -54,19 +52,21 @@ def draw_chart(bill, chart_pos, fig, num):
     xTickMarks = chart_axis(bill)
     ax.set_xticks(ind+width)
     xtickNames = ax.set_xticklabels(xTickMarks)
-    plt.setp(xtickNames, rotation=45, fontsize=20)
-
-    ## add a legend
-    ax.legend( (rects1[0], rects2[0]), ('Additions', 'Removals') )
+    plt.setp(xtickNames, rotation=45, fontsize=10)
 
 def ManageCharts(bill):
-    num = 1
-    fig = plt.figure()
-    amends = len(bill.amendments)
+    num = 0
+    amends = 0
 
     for x in bill.amendments:
         for z in x:
-            draw_chart(z, amends, fig, 1)
+            amends += 1
+
+    f, axarr = plt.subplots(amends, sharey=True)
+
+    for x in bill.amendments:
+        for z in x:
+            draw_chart(z, num, f, axarr[num])
             num += 1
 
     plt.show()

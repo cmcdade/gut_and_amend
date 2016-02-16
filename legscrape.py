@@ -13,7 +13,14 @@ class Amendment:
         self.additions = adds
         self.removals = removs
 
-def get_removals(sections, title):
+def BuildBulkRemoval(soup):
+    removed_secs = {}
+    remove_divs = soup.find_all("div", id="strikediv")
+
+
+
+
+def get_removals(sections, title, prefix):
     removed_secs = {}
 
     for sec in sections:
@@ -30,7 +37,8 @@ def get_removals(sections, title):
             remove_len += len(small_sec.get_text())
 
         subsection = CheckSubSection(s)
-        removed_secs[str(title+subsection)] = round(float(remove_len)/float(len(s)), 2)
+        sec_title = str(prefix+title+subsection)
+        removed_secs[sec_title] = round(float(remove_len)/float(len(s)), 2)
 
     return removed_secs
 
@@ -75,10 +83,11 @@ def BuildAmendmentAdditions(soup, title):
 
     return add_sections
 
-def BuildAmendmentRemovals(soup):
+def BuildAmendmentRemovals(soup, prefix):
     title = GetSectionTitle(soup)
+    removals = BuildBulkRemoval(soup)
     sections = soup.find_all("div", style="margin:0 0 1em 0;")
-    remove = get_removals(sections, title)
+    remove = get_removals(sections, title, prefix)
 
     return remove
 
@@ -86,9 +95,9 @@ def GetSectionTitle(soup):
     section_title = soup.find("h6")
     return str(section_title.getText())
 
-def BuildAmendmentSection(soup):
+def BuildAmendmentSection(soup, prefix):
     title = GetSectionTitle(soup)
-    additions = BuildAmendmentAdditions(soup, title)
+    additions = BuildAmendmentAdditions(soup, prefix+title)
 
     return additions
 
@@ -96,10 +105,13 @@ def AmendmentSections(soup, title):
     sections = soup.find("div", id="bill_all")
     adds = {}
     removes = {}
+    num = 1
 
     for x in sections:
-        adds = dict(adds.items() + BuildAmendmentSection(x).items())
-        removes = dict(removes.items() + BuildAmendmentRemovals(x).items())
+        prefix = "S"+str(num)+"."
+        adds = dict(adds.items() + BuildAmendmentSection(x, prefix).items())
+        removes = dict(removes.items() + BuildAmendmentRemovals(x, prefix).items())
+        num += 1
 
     amendment_vers = Amendment(title, adds, removes)
 
