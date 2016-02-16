@@ -24,8 +24,8 @@ def ChartRemovals(bill):
 
     return removes
 
-def draw_chart(bill, chart_pos, fig):
-    ax = fig.add_subplot(chart_pos,chart_pos,1)
+def draw_chart(bill, chart_pos, fig, num):
+    ax = plt.subplot(chart_pos,1,num)
     adds = ChartAdditions(bill)
     ## the data
     N = 35
@@ -62,10 +62,11 @@ def draw_chart(bill, chart_pos, fig):
 def ManageCharts(bill):
     num = 1
     fig = plt.figure()
+    amends = len(bill.amendments)
 
     for x in bill.amendments:
         for z in x:
-            draw_chart(z, num, fig)
+            draw_chart(z, amends, fig, 1)
             num += 1
 
     plt.show()
