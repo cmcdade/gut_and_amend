@@ -13,12 +13,20 @@ class Amendment:
         self.additions = adds
         self.removals = removs
 
-def BuildBulkRemoval(soup):
+def BuildBulkRemoval(soup, title):
     removed_secs = {}
     remove_divs = soup.find_all("div", id="strikediv")
 
+    for sec in remove_divs:
+        section = sec.find_all("div", style="margin:0 0 1em 0;")
+        if len(section) > 0:
+            for x in section:
+                s = x.get_text()
+                subsection = CheckSubSection(s)
 
-
+                sec_title = str(title+subsection)
+                removed_secs[sec_title] = 100.0
+    return removed_secs
 
 def get_removals(sections, title, prefix):
     removed_secs = {}
@@ -85,9 +93,9 @@ def BuildAmendmentAdditions(soup, title):
 
 def BuildAmendmentRemovals(soup, prefix):
     title = GetSectionTitle(soup)
-    removals = BuildBulkRemoval(soup)
     sections = soup.find_all("div", style="margin:0 0 1em 0;")
     remove = get_removals(sections, title, prefix)
+    remove = dict(remove.items() + BuildBulkRemoval(soup, prefix+title).items())
 
     return remove
 

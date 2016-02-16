@@ -45,6 +45,7 @@ def draw_chart(bill, chart_pos, fig, ax):
                         error_kw=dict(elinewidth=2,ecolor='blue'))
 
     # axes and labels
+    
     ax.set_xlim(-width,len(ind)+width)
     ax.set_ylim(0,1.0)
     ax.set_ylabel('Percent of Change')
@@ -52,6 +53,7 @@ def draw_chart(bill, chart_pos, fig, ax):
     xTickMarks = chart_axis(bill)
     ax.set_xticks(ind+width)
     xtickNames = ax.set_xticklabels(xTickMarks)
+    #plt.tight_layout(pad=10.0, w_pad=10.0, h_pad=1.0)
     plt.setp(xtickNames, rotation=45, fontsize=10)
 
 def ManageCharts(bill):
@@ -68,7 +70,6 @@ def ManageCharts(bill):
         for z in x:
             draw_chart(z, num, f, axarr[num])
             num += 1
-
     plt.show()
 
 def main():
