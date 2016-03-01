@@ -17,6 +17,25 @@ def ChartAdditions(bill):
 
     return adds
 
+def AmendmentAdditions(bill):
+    change = 0
+    num = 0
+    for add in sorted(bill.additions):
+        change += bill.additions[add]
+        num += 1
+
+    return change/num
+
+def AmendmentRemovals(bill):
+    change = 0
+    num = 0
+
+    for remove in sorted(bill.removals):
+        change += bill.removals[remove]
+        num += 1
+
+    return change/num
+
 def ChartRemovals(bill):
     removes = []
     for add in sorted(bill.removals):
@@ -45,7 +64,7 @@ def draw_chart(bill, chart_pos, fig, ax):
                         error_kw=dict(elinewidth=2,ecolor='blue'))
 
     # axes and labels
-    
+
     ax.set_xlim(-width,len(ind)+width)
     ax.set_ylim(0,1.0)
     ax.set_ylabel('Percent of Change')
@@ -53,7 +72,6 @@ def draw_chart(bill, chart_pos, fig, ax):
     xTickMarks = chart_axis(bill)
     ax.set_xticks(ind+width)
     xtickNames = ax.set_xticklabels(xTickMarks)
-    #plt.tight_layout(pad=10.0, w_pad=10.0, h_pad=1.0)
     plt.setp(xtickNames, rotation=45, fontsize=10)
 
 def ManageCharts(bill):
@@ -70,12 +88,30 @@ def ManageCharts(bill):
         for z in x:
             draw_chart(z, num, f, axarr[num])
             num += 1
+
     plt.show()
+
+def CalculateScore(bill):
+    adds = 0
+    amends = 0
+
+    for x in bill.amendments:
+        for z in x:
+            amends += 1
+
+    for x in bill.amendments:
+        for z in x:
+            adds += AmendmentAdditions(z)
+            adds += AmendmentRemovals(z)
+
+    score = adds/amends
+    print(score)
 
 def main():
     bill_link = raw_input("Enter leginfo link to bill: ")
     bill = legscrape.process_bill(bill_link)
-    ManageCharts(bill)
+    #ManageCharts(bill)
+    CalculateScore(bill)
 
 if __name__ == '__main__':
     main()
