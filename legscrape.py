@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import urllib
 import re
+import synset_analyzer
 
 class Bill:
     def __init__(self, t, amends):
@@ -8,10 +9,11 @@ class Bill:
         self.amendments = amends
 
 class Amendment:
-    def __init__(self, t, adds, removs):
+    def __init__(self, t, adds, removs, s):
         self.title = t
         self.additions = adds
         self.removals = removs
+        self.synset = s
 
 def BuildBulkRemoval(soup, title):
     removed_secs = {}
@@ -46,7 +48,8 @@ def get_removals(sections, title, prefix):
 
         subsection = CheckSubSection(s)
         sec_title = str(prefix+title+subsection)
-        removed_secs[sec_title] = round(float(remove_len)/float(len(s)), 2)
+        if len(s) > 0:
+            removed_secs[sec_title] = round(float(remove_len)/float(len(s)), 2)
 
     return removed_secs
 
@@ -75,7 +78,8 @@ def BuildAmendmentSmallAdds(soup, title, add_secs):
         subsection = CheckSubSection(s)
         for x in adds:
             add_len += len(x.get_text())
-        add_secs[str(title+subsection)] = round(float(add_len)/float(len(s)), 2)
+        if len(s) > 0:
+            add_secs[str(title+subsection)] = round(float(add_len)/float(len(s)), 2)
 
 def BuildAmendmentAdditions(soup, title):
     tmp = soup.find_all("font", class_="blue_text")
@@ -101,7 +105,10 @@ def BuildAmendmentRemovals(soup, prefix):
 
 def GetSectionTitle(soup):
     section_title = soup.find("h6")
-    return str(section_title.getText())
+    try:
+        return str(section_title.getText())
+    except (UnicodeEncodeError, AttributeError):
+        return "ERROR"
 
 def BuildAmendmentSection(soup, prefix):
     title = GetSectionTitle(soup)
@@ -109,7 +116,7 @@ def BuildAmendmentSection(soup, prefix):
 
     return additions
 
-def AmendmentSections(soup, title):
+def AmendmentSections(soup, title, s):
     sections = soup.find("div", id="bill_all")
     adds = {}
     removes = {}
@@ -121,14 +128,15 @@ def AmendmentSections(soup, title):
         removes = dict(removes.items() + BuildAmendmentRemovals(x, prefix).items())
         num += 1
 
-    amendment_vers = Amendment(title, adds, removes)
+    amendment_vers = Amendment(title, adds, removes, s)
 
     return amendment_vers
 
 def scrape_versions(link):
     r = urllib.urlopen(link).read()
     soup = BeautifulSoup(r, 'lxml')
-    return AmendmentSections(soup, print_currentVersion(soup))
+    s = synset_analyzer.compile_bill(soup)
+    return AmendmentSections(soup, print_currentVersion(soup), s)
 
 def compile_versions(versions, base):
     compAdd = "&cversion="
@@ -136,8 +144,8 @@ def compile_versions(versions, base):
     amendments = []
     for x in versions:
         cmp_link = base+compAdd+x['value']
-        if version > 0:
-            amendments.append(scrape_versions(cmp_link))
+        #if version > 0:
+        amendments.append(scrape_versions(cmp_link))
         version += 1
 
     return amendments
@@ -172,10 +180,71 @@ def open_url(link):
     base = link[0:34]
     comp_link = base+comp
     amendments = compare_versions(comp_link)
-    processed_bill = Bill(bill_title, amendments)
+    processed_bill = Bill(bill_title.strip(), amendments)
 
     return processed_bill
 
+def compare_sets(billset1, billset2, title1, title2):
+    set1 = set()
+    set2 = set()
+    diff_score_add = 0
+    diff_score_remove = 0
+
+    if title1 == title2:
+        return 0, 0, 0
+
+    for x in billset1:
+        if x not in billset2:
+            set1.add(x)
+        else:
+            diff_score_add += abs(billset1[x] - billset2[x]) * 10
+
+    for y in billset2:
+        if y not in billset1:
+            set2.add(y)
+        else:
+            diff_score_remove += abs(billset1[y] - billset2[y]) * 10
+
+    diff_score_add += (len(set1) * 100)/len(billset1)
+    diff_score_remove += (len(set2) * 100)/len(billset2)
+    max_score = diff_score_add + diff_score_remove
+
+    return max_score, diff_score_add, diff_score_remove
+
 def process_bill(bill_link):
     bill = open_url(bill_link)
+    changes = 0
+    max_add = -1
+    max_remove = -1
+
+    print "-----------------------------------"
+    for x in bill.amendments:
+        for y in range(0, len(x)-1):
+            for z in range(y, len(x)):
+
+                tmp_change, tmp_add, tmp_remove = compare_sets(x[y].synset, x[z].synset, x[y].title, x[z].title)
+
+                if tmp_add > max_add:
+                    max_add = tmp_add
+                if tmp_remove > max_remove:
+                    max_remove = tmp_remove
+                changes += tmp_change
+
+    print "Synset score for "+bill.title+" : "+str(changes)+"\tMax add: "+str(max_add)+"\tMax remove: "+str(max_remove)
+    print "-----------------------------------"
     return bill
+
+def getTotalLinks(soup):
+    table = soup.find("table", id="bill_results")
+    links = []
+    base = 'https://leginfo.legislature.ca.gov'
+    link = table.find_all("a")
+    for x in link:
+        tmpLink = x
+        links.append(base+tmpLink['href'])
+    return links
+
+def getBillList(search_link):
+    r = urllib.urlopen(search_link).read()
+    links = getTotalLinks(BeautifulSoup(r, "lxml"))
+    return links

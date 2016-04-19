@@ -1,6 +1,7 @@
 import legscrape
-import numpy as np
-import matplotlib.pyplot as plt
+import time
+#import numpy as np
+#import matplotlib.pyplot as plt
 
 def chart_axis(bill):
     axis = []
@@ -103,15 +104,42 @@ def CalculateScore(bill):
         for z in x:
             adds += AmendmentAdditions(z)
             adds += AmendmentRemovals(z)
+    if amends > 0:
+        score = adds/amends
+    else:
+        score = 0
+    return score
 
-    score = adds/amends
-    print(score)
+def ScoreBill(link):
+    bill = legscrape.process_bill(link)
+    score = CalculateScore(bill)
+    f = open('billScores.txt', 'a+')
+    try:
+        #print bill.title+", "+str(score)
+        f.write(bill.title+", "+str(score)+"\n")
+    except UnicodeEncodeError:
+        pass
+    f.close()
+
+def BatchSearch(link):
+    links = legscrape.getBillList(link)
+    print '----BEGINING TO PROCESS BILLS----'
+    i = 1
+    for x in links:
+        print 'SCORING BILL '+str(i)+' of '+str(len(links))
+        ScoreBill(x)
+        time.sleep(2)
+        i += 1
 
 def main():
+    choice = raw_input("Batch or single bill? : ")
     bill_link = raw_input("Enter leginfo link to bill: ")
-    bill = legscrape.process_bill(bill_link)
     #ManageCharts(bill)
-    CalculateScore(bill)
+
+    if choice == 'batch':
+        BatchSearch(bill_link)
+    else:
+        ScoreBill(bill_link)
 
 if __name__ == '__main__':
     main()
