@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import urllib
+import operator
 import re
 import synset_analyzer
 
@@ -185,52 +186,59 @@ def open_url(link):
     return processed_bill
 
 def compare_sets(billset1, billset2, title1, title2):
-    set1 = set()
-    set2 = set()
+    bill_union = set()
     diff_score_add = 0
     diff_score_remove = 0
-
     if title1 == title2:
         return 0, 0, 0
 
-    for x in billset1:
-        if x not in billset2:
-            set1.add(x)
-        else:
-            diff_score_add += abs(billset1[x] - billset2[x]) * 10
-
     for y in billset2:
-        if y not in billset1:
-            set2.add(y)
+        if y in billset1:
+            bill_union.add(y)
         else:
-            diff_score_remove += abs(billset1[y] - billset2[y]) * 10
+            diff_score_add += 1
+    for z in billset1:
+        if z not in billset2:
+            diff_score_remove += 1
 
-    diff_score_add += (len(set1) * 100)/len(billset1)
-    diff_score_remove += (len(set2) * 100)/len(billset2)
-    max_score = diff_score_add + diff_score_remove
-
+    diff_score_add = float(diff_score_add) / len(billset1)
+    diff_score_remove = float(diff_score_remove) / len(billset1)
+    max_score = (float(len(billset2) - len(bill_union))/float(len(billset2)))*100
     return max_score, diff_score_add, diff_score_remove
+
+
+def converted_date(title):
+    date_part = title[0:8]
+    formatted_date = date_part[6:8]+"/"+date_part[0:3]+date_part[3:5]
+    return formatted_date
+
+def sort_amends(amendments):
+    amends = []
+    for x in amendments:
+        for y in range(0, len(x)):
+            converted_date(x[y].title)
+            amends.append(x[y])
+
+    return sorted(amends, key=lambda x: converted_date(x.title))
 
 def process_bill(bill_link):
     bill = open_url(bill_link)
     changes = 0
     max_add = -1
     max_remove = -1
+    amends = sort_amends(bill.amendments)
 
     print "-----------------------------------"
-    for x in bill.amendments:
-        for y in range(0, len(x)-1):
-            for z in range(y, len(x)):
+    for y in range(0, len(amends)-1):
+            tmp_change, tmp_add, tmp_remove = compare_sets(amends[y].synset, amends[y+1].synset, amends[y].title, amends[y+1].title)
 
-                tmp_change, tmp_add, tmp_remove = compare_sets(x[y].synset, x[z].synset, x[y].title, x[z].title)
+            if tmp_add > max_add:
+                max_add = tmp_add
+            if tmp_remove > max_remove:
+                max_remove = tmp_remove
+            changes += tmp_change
 
-                if tmp_add > max_add:
-                    max_add = tmp_add
-                if tmp_remove > max_remove:
-                    max_remove = tmp_remove
-                changes += tmp_change
-
-    print "Synset score for "+bill.title+" : "+str(changes)+"\tMax add: "+str(max_add)+"\tMax remove: "+str(max_remove)
+    print "Synset score for "+bill.title+" : "+str(changes/len(amends))+"\tMax add: "+str(max_add)+"\tMax remove: "+str(max_remove)
     print "-----------------------------------"
     return bill
 

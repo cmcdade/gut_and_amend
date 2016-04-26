@@ -17,10 +17,14 @@ def build_synset(text):
             pass
     return bill_synset
 def compile_bill(soup):
-    soup = soup.find("div", {"id": "bill_all"})
+    try:
+        soup = soup.find("div", {"id": "bill_all"})
     # kill all script and style elements
-    for script in soup(["script", "style"]):
+        for script in soup(["script", "style"]):
             script.extract()    # rip it out
+    except TypeError:
+        pass
+
 
 # get text
     text = soup.get_text()

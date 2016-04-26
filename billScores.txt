@@ -410,3 +410,42 @@ AB-8 Tobacco products: minimum legal age.(2015-2016), 0.04
 AB-9 Gambling: Internet poker: unlawful gambling activity.(2015-2016), 0.0
 AB-9 Richmond-San Rafael Bridge. (2015-2016), 0.0
 AB-9 Tobacco use programs.(2015-2016), 0.0115151515152
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-3 Consumer Credit Reporting.(2003-2004), 33.5142013889
+AB-1 Drought: local governments: fines.(2015-2016), 0.1275
+AB-1 Transportation funding.(2015-2016), 0.0
+AB-1 Developmental services: Medi-Cal: funding.(2015-2016), 36.9089503593
+AB-1 Drought: local governments: fines.(2015-2016), 0.1275
+AB-1 Transportation funding.(2015-2016), 0.0
+AB-1 Developmental services: Medi-Cal: funding.(2015-2016), 36.9089503593
+AB-2 Community revitalization authority.(2015-2016), 12.6020779221
+AB-2 Transportation projects: comprehensive development lease agreements. (2015-2016), 0.0
+AB-2 Medi-Cal and developmental services: funding: rates.(2015-2016), 0.0
+AB-3 Isla Vista Community Services District.(2015-2016), 24.8909948524
+AB-3 Transportation funding.(2015-2016), 0.025
+AB-3 Developmental services: provider rates: minimum wage.(2015-2016), 0.0
+AB-4 Vehicle weight fees: transportation bond debt service.(2015-2016), 0.0
+AB-4 Transportation funding.(2015-2016), 0.0
+AB-4 Managed care organization provider tax.(2015-2016), 34.0008
+AB-1 Drought: local governments: fines.(2015-2016), 0.1275
+AB-1 Transportation funding.(2015-2016), 0.0
+AB-1 Developmental services: Medi-Cal: funding.(2015-2016), 36.9089503593
+AB-2 Community revitalization authority.(2015-2016), 12.6020779221
+AB-2 Transportation projects: comprehensive development lease agreements. (2015-2016), 0.0
+AB-2 Medi-Cal and developmental services: funding: rates.(2015-2016), 0.0
