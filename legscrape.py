@@ -228,7 +228,6 @@ def process_bill(bill_link):
     max_remove = -1
     amends = sort_amends(bill.amendments)
 
-    print "-----------------------------------"
     for y in range(0, len(amends)-1):
             tmp_change, tmp_add, tmp_remove = compare_sets(amends[y].synset, amends[y+1].synset, amends[y].title, amends[y+1].title)
 
@@ -238,8 +237,7 @@ def process_bill(bill_link):
                 max_remove = tmp_remove
             changes += tmp_change
 
-    print "Synset score for "+bill.title+" : "+str(changes/len(amends))+"\tMax add: "+str(max_add)+"\tMax remove: "+str(max_remove)
-    print "-----------------------------------"
+    print "{\"title\": \""+bill.title+"\", \"synset_change\": "+str(changes/len(amends))+", \"max_add\": "+str(max_add)+", \"max_remove\": "+str(max_remove)+"},"
     return bill
 
 def getTotalLinks(soup):

@@ -25,9 +25,11 @@ def compile_bill(soup):
     except TypeError:
         pass
 
+    try:
+        text = soup.get_text()
+    except AttributeError:
+        return({})
 
-# get text
-    text = soup.get_text()
 
 # break into lines and remove leading and trailing space on each
     lines = (line.strip() for line in text.splitlines())

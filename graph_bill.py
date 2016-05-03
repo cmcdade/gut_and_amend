@@ -126,10 +126,12 @@ def BatchSearch(link):
     print '----BEGINING TO PROCESS BILLS----'
     i = 1
     for x in links:
-        print 'SCORING BILL '+str(i)+' of '+str(len(links))
-        ScoreBill(x)
-        time.sleep(2)
-        i += 1
+        try:
+            ScoreBill(x)
+            time.sleep(2)
+            i += 1
+        except:
+            pass
 
 def main():
     choice = raw_input("Batch or single bill? : ")

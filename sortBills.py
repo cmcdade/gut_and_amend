@@ -1,18 +1,10 @@
-f1 = open('billScores.txt', 'r')
-f2 = open('sortedScores', 'a+')
+import json
+import sys
+import operator
+from pprint import pprint
 
-sorts = []
+with open('bills.json') as openFile:
+    data = json.load(openFile)
 
-for line in f1:
-    split = line.split(',')
-    num = split[1]
-    num = num.split()
-    try:
-        x = float(num[0])
-    except ValueError:
-        pass
-    sorts.append((split[0], x))
-
-sorted_by_second = sorted(sorts, reverse=True,key=lambda tup: tup[1])
-for x in sorted_by_second:
-    f2.write(x[0]+", "+str(x[1])+"\n")
+sorted_bills = sorted(data, key=lambda k: k['synset_change'], reverse=True)
+pprint(sorted_bills)
