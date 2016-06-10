@@ -112,14 +112,6 @@ def CalculateScore(bill):
 
 def ScoreBill(link):
     bill = legscrape.process_bill(link)
-    score = CalculateScore(bill)
-    f = open('billScores.txt', 'a+')
-    try:
-        #print bill.title+", "+str(score)
-        f.write(bill.title+", "+str(score)+"\n")
-    except UnicodeEncodeError:
-        pass
-    f.close()
 
 def BatchSearch(link):
     links = legscrape.getBillList(link)
@@ -136,7 +128,6 @@ def BatchSearch(link):
 def main():
     choice = raw_input("Batch or single bill? : ")
     bill_link = raw_input("Enter leginfo link to bill: ")
-    #ManageCharts(bill)
 
     if choice == 'batch':
         BatchSearch(bill_link)

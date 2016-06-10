@@ -1,19 +1,21 @@
 from bs4 import BeautifulSoup
 import urllib
 import operator
+import math
 import re
 import synset_analyzer
 
 class Bill:
-    def __init__(self, t, amends):
+    def __init__(self, t, amends, f):
         self.title = t
         self.amendments = amends
+        self.features = f
 
 class Amendment:
-    def __init__(self, t, adds, removs, s):
+    def __init__(self, t, l, sec, s):
         self.title = t
-        self.additions = adds
-        self.removals = removs
+        self.length = l
+        self.sections = sec
         self.synset = s
 
 def BuildBulkRemoval(soup, title):
@@ -117,20 +119,28 @@ def BuildAmendmentSection(soup, prefix):
 
     return additions
 
+def cleanSection(sec):
+    retVal = sec.replace(".SEC.", "")
+    if retVal.endswith("."):
+        retVal = retVal[0:-1]
+    return retVal
+
+
 def AmendmentSections(soup, title, s):
     sections = soup.find("div", id="bill_all")
-    adds = {}
-    removes = {}
-    num = 1
+    sectionTitles = set()
+    tmpSec = ""
+    txt = sections.get_text().split()
+    secLock = False
 
-    for x in sections:
-        prefix = "S"+str(num)+"."
-        adds = dict(adds.items() + BuildAmendmentSection(x, prefix).items())
-        removes = dict(removes.items() + BuildAmendmentRemovals(x, prefix).items())
-        num += 1
-
-    amendment_vers = Amendment(title, adds, removes, s)
-
+    for y in txt:
+        if secLock:
+            sectionTitles.add(cleanSection(tmpSec+y))
+            secLock = False
+        if y == 'Section':
+            tmpSec = y
+            secLock = True
+    amendment_vers = Amendment(title, len(sections.get_text()), sectionTitles, s)
     return amendment_vers
 
 def scrape_versions(link):
@@ -174,14 +184,39 @@ def compare_section(soup):
     comp_links = soup.find_all("a", id="nav_bar_top_version_compare")
     return comp_links[0]['href']
 
+def getFeatures(soup):
+    vote = soup.find("span", id="vote")
+    appropriation = soup.find("span", id="appropriation")
+    fiscalcommittee = soup.find("span", id="fiscalcommittee")
+    localprogram = soup.find("span", id="localprogram")
+
+    vote_feature = str(vote.get_text().split()[1])
+    if len(str(appropriation.get_text().split()[1])) > 3:
+        appropriation_feature = "Changed"
+    else:
+        appropriation_feature = "Same"
+
+    if len(str(fiscalcommittee.get_text().split()[2])) > 3:
+        fiscal_feature = "Changed"
+    else:
+        fiscal_feature = "Same"
+
+    if len(str(localprogram.get_text().split()[2])) > 3:
+        local_feature = "Changed"
+    else:
+        local_feature = "Same"
+
+    return (vote_feature, appropriation_feature, fiscal_feature, local_feature)
+
 def open_url(link):
     r = urllib.urlopen(link).read()
+    billFeatures = getFeatures(BeautifulSoup(r, "lxml"))
     comp = compare_section(BeautifulSoup(r, "lxml"))
     bill_title = GetBillTitle(BeautifulSoup(r, "lxml"))
     base = link[0:34]
     comp_link = base+comp
     amendments = compare_versions(comp_link)
-    processed_bill = Bill(bill_title.strip(), amendments)
+    processed_bill = Bill(bill_title.strip(), amendments, billFeatures)
 
     return processed_bill
 
@@ -201,10 +236,15 @@ def compare_sets(billset1, billset2, title1, title2):
         if z not in billset2:
             diff_score_remove += 1
 
-    diff_score_add = float(diff_score_add) / len(billset1)
-    diff_score_remove = float(diff_score_remove) / len(billset1)
-    max_score = (float(len(billset2) - len(bill_union))/float(len(billset2)))*100
-    return max_score, diff_score_add, diff_score_remove
+    diff_score_add = (float(diff_score_add) / len(billset1))*100
+    diff_score_remove = (float(diff_score_remove) / len(billset1))*100
+
+    if int(diff_score_remove) is 0:
+        max_score = 0
+    else:
+        max_score = (float(abs(len(billset2) - len(bill_union)))/float(len(billset2)))*100
+
+    return max_score
 
 
 def converted_date(title):
@@ -221,23 +261,39 @@ def sort_amends(amendments):
 
     return sorted(amends, key=lambda x: converted_date(x.title))
 
+def compareAmendSections(sec1, sec2):
+    secDiff = 0
+    union = 0
+    for x in sec2:
+        if x not in sec1:
+            secDiff += 1
+        else:
+            union += 1
+    return (float(abs(secDiff-union))/len(sec1))*100
+
 def process_bill(bill_link):
     bill = open_url(bill_link)
-    changes = 0
-    max_add = -1
-    max_remove = -1
+    max_synset_change = 0
     amends = sort_amends(bill.amendments)
+    bills_json = open('bills.csv', 'a+')
+    avgLenChange = 0
+    changes = 0
+    totalSecChange = 0
 
-    for y in range(0, len(amends)-1):
-            tmp_change, tmp_add, tmp_remove = compare_sets(amends[y].synset, amends[y+1].synset, amends[y].title, amends[y+1].title)
-
-            if tmp_add > max_add:
-                max_add = tmp_add
-            if tmp_remove > max_remove:
-                max_remove = tmp_remove
+    for y in range(1, len(amends)-1):
+            tmp_change = compare_sets(amends[y].synset, amends[y+1].synset, amends[y].title, amends[y+1].title)
+            secChange = compareAmendSections(amends[y].sections, amends[y+1].sections)
+            if tmp_change > max_synset_change:
+                max_synset_change = tmp_change
             changes += tmp_change
-
-    print "{\"title\": \""+bill.title+"\", \"synset_change\": "+str(changes/len(amends))+", \"max_add\": "+str(max_add)+", \"max_remove\": "+str(max_remove)+"},"
+            totalSecChange += secChange
+            avgLenChange = (float(amends[y].length)/float(amends[y+1].length))*100
+    avgLenChange = avgLenChange/(len(amends)-1)
+    totalSecChange = float(totalSecChange)/(len(amends)-1)
+    changes = float(changes)/(len(amends)-1)
+    print(bill.title,changes,max_synset_change,avgLenChange, totalSecChange, bill.features)
+    bills_json.write(bill.title+"|"+str(changes)+"|"+str(max_synset_change)+"|"+str(avgLenChange)+"|"+str(totalSecChange)+"|"+str(bill.features[0])+"|"+bill.features[1]+"|"+str(bill.features[2])+"|"+str(bill.features[3])+"\n")
+    bills_json.close()
     return bill
 
 def getTotalLinks(soup):
